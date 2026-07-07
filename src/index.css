@@ -1,0 +1,157 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Material 3 inspired token palette, ported from the dashboard mockup */
+  --color-primary: #091426;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #1e293b;
+  --color-on-primary-container: #8590a6;
+  --color-primary-fixed: #d8e3fb;
+  --color-primary-fixed-dim: #bcc7de;
+  --color-on-primary-fixed: #111c2d;
+  --color-on-primary-fixed-variant: #3c475a;
+  --color-inverse-primary: #bcc7de;
+
+  --color-secondary: #4648d4;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #6063ee;
+  --color-on-secondary-container: #fffbff;
+  --color-secondary-fixed: #e1e0ff;
+  --color-secondary-fixed-dim: #c0c1ff;
+  --color-on-secondary-fixed: #07006c;
+  --color-on-secondary-fixed-variant: #2f2ebe;
+
+  --color-tertiary: #10151c;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #242931;
+  --color-on-tertiary-container: #8b909a;
+  --color-tertiary-fixed: #dee2ed;
+  --color-tertiary-fixed-dim: #c2c6d1;
+  --color-on-tertiary-fixed: #171c23;
+  --color-on-tertiary-fixed-variant: #424750;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-background: #f7f9fb;
+  --color-on-background: #191c1e;
+  --color-surface: #f7f9fb;
+  --color-surface-dim: #d8dadc;
+  --color-surface-bright: #f7f9fb;
+  --color-surface-tint: #545f73;
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #45474c;
+  --color-surface-variant: #e0e3e5;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f2f4f6;
+  --color-surface-container: #eceef0;
+  --color-surface-container-high: #e6e8ea;
+  --color-surface-container-highest: #e0e3e5;
+  --color-inverse-surface: #2d3133;
+  --color-inverse-on-surface: #eff1f3;
+  --color-outline: #75777d;
+  --color-outline-variant: #c5c6cd;
+
+  /* Layout scale used by the dashboard mockup */
+  --spacing-base: 8px;
+  --spacing-container-padding: 32px;
+  --spacing-gutter: 24px;
+  --spacing-section-gap: 64px;
+
+  --text-label-sm: 12px;
+  --text-label-sm--line-height: 1.2;
+  --text-label-sm--font-weight: 600;
+  --text-label-md: 14px;
+  --text-label-md--line-height: 1.4;
+  --text-label-md--letter-spacing: 0.01em;
+  --text-label-md--font-weight: 500;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 1.5;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 1.6;
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 1.3;
+  --text-headline-md--font-weight: 600;
+  --text-headline-lg: 32px;
+  --text-headline-lg--line-height: 1.2;
+  --text-headline-lg--letter-spacing: -0.01em;
+  --text-headline-lg--font-weight: 600;
+  --text-display-lg: 48px;
+  --text-display-lg--line-height: 1.1;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 700;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  background-image:
+    radial-gradient(circle at 10% 0%, rgb(99 102 241 / 10%), transparent 55%),
+    radial-gradient(circle at 90% 15%, rgb(70 72 212 / 8%), transparent 50%);
+  background-attachment: fixed;
+  color: var(--color-on-background);
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    "FILL" 0,
+    "wght" 400,
+    "GRAD" 0,
+    "opsz" 24;
+}
+
+@layer components {
+  .glass-card {
+    background: rgb(255 255 255 / 78%);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgb(255 255 255 / 60%);
+    box-shadow:
+      0 12px 40px rgb(30 41 59 / 10%),
+      0 2px 8px rgb(30 41 59 / 6%);
+  }
+
+  .soft-ui-card {
+    background: #ffffff;
+    border: 1px solid var(--color-surface-container-low);
+    box-shadow: 0 20px 40px rgb(30 41 59 / 6%);
+  }
+
+  .floating-shape {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+    opacity: 35%;
+    animation: float 10s ease-in-out infinite;
+  }
+
+  .soft-shadow {
+    box-shadow: 0 12px 32px rgb(30 41 59 / 10%);
+  }
+
+  .soft-extrusion {
+    box-shadow:
+      inset 0 2px 4px rgb(255 255 255 / 80%),
+      0 4px 12px rgb(30 41 59 / 5%);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -24px, 0) scale(1.04);
+  }
+}
