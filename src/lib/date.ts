@@ -18,3 +18,29 @@ export function getDDayLabel(deadline: string): string {
 export function isUrgentDeadline(deadline: string): boolean {
   return diffInDays(deadline) <= 2
 }
+
+export function isCriticalDeadline(deadline: string): boolean {
+  return diffInDays(deadline) <= 0
+}
+
+export function toEndOfDayIso(dateOnly: string): string {
+  return `${dateOnly}T23:59:59`
+}
+
+export function formatMinutesLabel(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours === 0) return `${mins}분`
+  if (mins === 0) return `${hours}시간`
+  return `${hours}시간 ${mins}분`
+}
+
+export function formatCompletedAt(dateTime: string): string {
+  const date = new Date(dateTime)
+  const dateLabel = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
+  const hours = date.getHours()
+  const period = hours < 12 ? '오전' : '오후'
+  const hour12 = hours % 12 === 0 ? 12 : hours % 12
+  const timeLabel = `${period} ${hour12}:${String(date.getMinutes()).padStart(2, '0')}`
+  return `${dateLabel} • ${timeLabel}`
+}

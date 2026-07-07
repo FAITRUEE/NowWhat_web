@@ -4,7 +4,9 @@ import LoginPage from '@/pages/LoginPage'
 import SignupPage from '@/pages/SignupPage'
 import DashboardPage from '@/pages/DashboardPage'
 import HistoryPage from '@/pages/HistoryPage'
+import CalendarPage from '@/pages/CalendarPage'
 import WeightSettingsPage from '@/pages/WeightSettingsPage'
+import TaskDetailPage from '@/pages/TaskDetailPage'
 
 export const router = createBrowserRouter([
   {
@@ -20,7 +22,9 @@ export const router = createBrowserRouter([
     element: <MainLayout />,
     children: [
       { index: true, element: <DashboardPage /> },
+      { path: 'tasks/:id', element: <TaskDetailPage /> },
       { path: 'history', element: <HistoryPage /> },
+      { path: 'calendar', element: <CalendarPage /> },
       { path: 'settings/weights', element: <WeightSettingsPage /> },
     ],
   },

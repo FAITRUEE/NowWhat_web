@@ -21,17 +21,23 @@ export default function UrgentItemsCard({ items }: UrgentItemsCardProps) {
         </div>
         <h4 className="text-headline-md text-primary">긴급 항목</h4>
       </div>
-      <ul className="flex-1 space-y-4">
-        {items.map((item) => (
-          <li key={item.id} className="flex items-center gap-4 rounded-2xl p-4 transition-colors hover:bg-white/40">
-            <div className={`h-2 w-2 rounded-full ${item.critical ? 'bg-error' : 'bg-error/40'}`} />
-            <div className="flex-1">
-              <p className="text-label-md font-bold text-primary">{item.title}</p>
-              <p className="text-label-sm text-on-surface-variant">{item.timeLabel}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {items.length === 0 ? (
+        <p className="flex flex-1 items-center justify-center text-label-md text-on-surface-variant">
+          긴급한 항목이 없어요.
+        </p>
+      ) : (
+        <ul className="flex-1 space-y-4">
+          {items.map((item) => (
+            <li key={item.id} className="flex items-center gap-4 rounded-2xl p-4 transition-colors hover:bg-white/40">
+              <div className={`h-2 w-2 rounded-full ${item.critical ? 'bg-error' : 'bg-error/40'}`} />
+              <div className="flex-1">
+                <p className="text-label-md font-bold text-primary">{item.title}</p>
+                <p className="text-label-sm text-on-surface-variant">{item.timeLabel}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
