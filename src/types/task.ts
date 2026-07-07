@@ -21,3 +21,9 @@ export interface TaskInput {
   importance: 1 | 2 | 3 | 4 | 5
   estimatedMinutes?: number
 }
+
+export interface RerankedTask {
+  taskId: number
+  newRank: number
+  reason: string
+}

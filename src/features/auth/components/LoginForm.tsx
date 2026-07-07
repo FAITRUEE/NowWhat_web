@@ -1,13 +1,31 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import Icon from '@/components/ui/Icon'
 import TextField from '@/components/ui/TextField'
+import { authApi } from '@/features/auth/api/authApi'
 
 export default function LoginForm() {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const loginMutation = useMutation({
+    mutationFn: authApi.login,
+    onSuccess: (data) => {
+      localStorage.setItem('accessToken', data.accessToken)
+      navigate('/')
+    },
+    onError: (err) => {
+      setError(
+        (isAxiosError(err) && (err.response?.data as { message?: string })?.message) ||
+          '로그인에 실패했습니다.',
+      )
+    },
+  })
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -16,6 +34,7 @@ export default function LoginForm() {
       return
     }
     setError(null)
+    loginMutation.mutate({ email, password })
   }
 
   return (
@@ -75,9 +94,10 @@ export default function LoginForm() {
 
       <button
         type="submit"
-        className="mt-2 h-[58px] w-full rounded-xl bg-gradient-to-r from-secondary to-secondary-container text-[16px] font-bold tracking-wide text-on-primary shadow-lg shadow-secondary/20 transition-transform hover:scale-[1.01] active:scale-95"
+        disabled={loginMutation.isPending}
+        className="mt-2 h-[58px] w-full rounded-xl bg-gradient-to-r from-secondary to-secondary-container text-[16px] font-bold tracking-wide text-on-primary shadow-lg shadow-secondary/20 transition-transform hover:scale-[1.01] active:scale-95 disabled:opacity-60 disabled:hover:scale-100"
       >
-        로그인
+        {loginMutation.isPending ? '로그인 중...' : '로그인'}
       </button>
 
       <div className="flex flex-col items-center gap-4 border-t border-surface-container/50 pt-8">

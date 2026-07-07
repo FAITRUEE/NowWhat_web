@@ -23,7 +23,7 @@ export default function ProductivityScoreCard({
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary/10 text-secondary">
           <Icon name="insights" filled />
         </div>
-        <h4 className="text-headline-md text-primary">생산성 점수</h4>
+        <h4 className="text-headline-md text-primary">정시 완료율</h4>
       </div>
       <div className="flex flex-1 flex-col items-center justify-center py-4">
         <div className="relative flex h-32 w-32 items-center justify-center">

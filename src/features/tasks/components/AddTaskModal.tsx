@@ -1,5 +1,8 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import Icon from '@/components/ui/Icon'
+import DatePicker from '@/components/ui/DatePicker'
+import { formatMinutesLabel } from '@/lib/date'
+import type { Task } from '@/types/task'
 
 export interface NewTaskInput {
   title: string
@@ -15,39 +18,63 @@ const IMPORTANCE_OPTIONS: { value: 1 | 3 | 5; label: string }[] = [
   { value: 1, label: '낮음' },
 ]
 
-const EFFORT_OPTIONS: { value: number; label: string; timeLabel: string }[] = [
-  { value: 30, label: 'Low', timeLabel: '30분' },
-  { value: 60, label: 'Mid', timeLabel: '1시간' },
-  { value: 120, label: 'High', timeLabel: '2시간' },
-]
+const MIN_ESTIMATED_MINUTES = 5
+const MAX_ESTIMATED_MINUTES = 240
+const ESTIMATED_MINUTES_STEP = 5
+const DEFAULT_ESTIMATED_MINUTES = 30
+
+function nearestImportanceOption(value: number): 1 | 3 | 5 {
+  return IMPORTANCE_OPTIONS.map((option) => option.value).reduce((best, candidate) =>
+    Math.abs(candidate - value) < Math.abs(best - value) ? candidate : best,
+  )
+}
+
+function clampEstimatedMinutes(value: number): number {
+  const stepped = Math.round(value / ESTIMATED_MINUTES_STEP) * ESTIMATED_MINUTES_STEP
+  return Math.min(MAX_ESTIMATED_MINUTES, Math.max(MIN_ESTIMATED_MINUTES, stepped))
+}
 
 interface AddTaskModalProps {
   open: boolean
   onClose: () => void
   onSubmit: (input: NewTaskInput) => void
+  defaultDeadline?: string
+  editingTask?: Task | null
 }
 
-export default function AddTaskModal({ open, onClose, onSubmit }: AddTaskModalProps) {
+export default function AddTaskModal({ open, onClose, onSubmit, defaultDeadline, editingTask }: AddTaskModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [deadline, setDeadline] = useState('')
   const [importance, setImportance] = useState<1 | 3 | 5>(3)
-  const [effortIndex, setEffortIndex] = useState(2)
+  const [estimatedMinutes, setEstimatedMinutes] = useState(DEFAULT_ESTIMATED_MINUTES)
+
+  useEffect(() => {
+    if (!open) return
+    if (editingTask) {
+      setTitle(editingTask.title)
+      setDescription(editingTask.description ?? '')
+      setDeadline(editingTask.deadline.slice(0, 10))
+      setImportance(nearestImportanceOption(editingTask.importance))
+      setEstimatedMinutes(clampEstimatedMinutes(editingTask.estimatedMinutes ?? DEFAULT_ESTIMATED_MINUTES))
+    } else {
+      setTitle('')
+      setDescription('')
+      setDeadline(defaultDeadline ?? '')
+      setImportance(3)
+      setEstimatedMinutes(DEFAULT_ESTIMATED_MINUTES)
+    }
+  }, [open, editingTask, defaultDeadline])
 
   if (!open) return null
 
+  const isEditing = editingTask != null
   const canSubmit = title.trim() !== '' && deadline !== ''
-  const effort = EFFORT_OPTIONS[effortIndex]
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!canSubmit) return
-    onSubmit({ title, description, deadline, importance, estimatedMinutes: effort.value })
-    setTitle('')
-    setDescription('')
-    setDeadline('')
-    setImportance(3)
-    setEffortIndex(2)
+    onSubmit({ title, description, deadline, importance, estimatedMinutes })
   }
 
   return (
@@ -58,8 +85,10 @@ export default function AddTaskModal({ open, onClose, onSubmit }: AddTaskModalPr
       >
         <div className="flex items-center justify-between border-b border-surface-variant/30 p-8">
           <div>
-            <h3 className="text-headline-md text-primary">할 일 추가</h3>
-            <p className="text-label-md text-on-surface-variant">어떤 목표를 향해 나아가시나요?</p>
+            <h3 className="text-headline-md text-primary">{isEditing ? '할 일 수정' : '할 일 추가'}</h3>
+            <p className="text-label-md text-on-surface-variant">
+              {isEditing ? '내용을 수정하고 저장하세요.' : '어떤 목표를 향해 나아가시나요?'}
+            </p>
           </div>
           <button
             type="button"
@@ -85,18 +114,7 @@ export default function AddTaskModal({ open, onClose, onSubmit }: AddTaskModalPr
           <div className="grid grid-cols-1 gap-gutter md:grid-cols-2">
             <div className="space-y-2">
               <label className="text-label-sm uppercase tracking-wider text-on-surface-variant">마감 날짜</label>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={deadline}
-                  onChange={(event) => setDeadline(event.target.value)}
-                  className="w-full rounded-xl border border-outline-variant/30 bg-white py-3 pl-12 pr-4 text-on-surface focus:outline-none focus:ring-2 focus:ring-secondary/50"
-                />
-                <Icon
-                  name="calendar_today"
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant"
-                />
-              </div>
+              <DatePicker value={deadline} onChange={setDeadline} />
             </div>
             <div className="space-y-2">
               <label className="text-label-sm uppercase tracking-wider text-on-surface-variant">중요도</label>
@@ -124,24 +142,23 @@ export default function AddTaskModal({ open, onClose, onSubmit }: AddTaskModalPr
               <label className="text-label-sm uppercase tracking-wider text-on-surface-variant">
                 예상 소요 시간
               </label>
-              <span className="rounded-full bg-primary px-3 py-1 text-label-sm text-white">{effort.label}</span>
+              <span className="rounded-full bg-primary px-3 py-1 text-label-sm text-white">
+                {formatMinutesLabel(estimatedMinutes)}
+              </span>
             </div>
             <div className="relative py-4">
               <input
                 type="range"
-                min={0}
-                max={2}
-                step={1}
-                value={effortIndex}
-                onChange={(event) => setEffortIndex(Number(event.target.value))}
+                min={MIN_ESTIMATED_MINUTES}
+                max={MAX_ESTIMATED_MINUTES}
+                step={ESTIMATED_MINUTES_STEP}
+                value={estimatedMinutes}
+                onChange={(event) => setEstimatedMinutes(Number(event.target.value))}
                 className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-outline-variant/30 accent-secondary"
               />
-              <div className="mt-2 flex justify-between px-1">
-                {EFFORT_OPTIONS.map((option) => (
-                  <span key={option.value} className="text-label-sm text-on-surface-variant opacity-50">
-                    {option.timeLabel}
-                  </span>
-                ))}
+              <div className="mt-2 flex justify-between px-1 text-label-sm text-on-surface-variant opacity-50">
+                <span>5분</span>
+                <span>4시간</span>
               </div>
             </div>
           </div>
@@ -170,8 +187,8 @@ export default function AddTaskModal({ open, onClose, onSubmit }: AddTaskModalPr
             disabled={!canSubmit}
             className="flex flex-[2] items-center justify-center gap-2 rounded-xl bg-primary py-4 font-bold text-white shadow-lg transition-all hover:shadow-xl active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <Icon name="add_task" />
-            할 일 생성하기
+            <Icon name={isEditing ? 'save' : 'add_task'} />
+            {isEditing ? '수정 저장하기' : '할 일 생성하기'}
           </button>
         </div>
       </form>

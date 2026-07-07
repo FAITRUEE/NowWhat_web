@@ -1,9 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import Icon from '@/components/ui/Icon'
 import TextField from '@/components/ui/TextField'
+import { authApi } from '@/features/auth/api/authApi'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const PASSWORD_MIN_LENGTH = 8
 
 export default function SignupForm() {
   const navigate = useNavigate()
@@ -12,6 +16,19 @@ export default function SignupForm() {
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const signupMutation = useMutation({
+    mutationFn: authApi.signup,
+    onSuccess: () => {
+      navigate('/login')
+    },
+    onError: (err) => {
+      setError(
+        (isAxiosError(err) && (err.response?.data as { message?: string })?.message) ||
+          '회원가입에 실패했습니다.',
+      )
+    },
+  })
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -23,12 +40,16 @@ export default function SignupForm() {
       setError('올바른 이메일 형식이 아닙니다.')
       return
     }
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setError('비밀번호는 8자 이상이어야 합니다.')
+      return
+    }
     if (password !== passwordConfirm) {
       setError('비밀번호가 일치하지 않습니다.')
       return
     }
     setError(null)
-    navigate('/login')
+    signupMutation.mutate({ email, password })
   }
 
   return (
@@ -78,9 +99,10 @@ export default function SignupForm() {
 
       <button
         type="submit"
-        className="mt-2 h-[58px] w-full rounded-xl bg-gradient-to-r from-secondary to-secondary-container text-[16px] font-bold tracking-wide text-on-primary shadow-lg shadow-secondary/20 transition-transform hover:scale-[1.01] active:scale-95"
+        disabled={signupMutation.isPending}
+        className="mt-2 h-[58px] w-full rounded-xl bg-gradient-to-r from-secondary to-secondary-container text-[16px] font-bold tracking-wide text-on-primary shadow-lg shadow-secondary/20 transition-transform hover:scale-[1.01] active:scale-95 disabled:opacity-60 disabled:hover:scale-100"
       >
-        가입하기
+        {signupMutation.isPending ? '가입 중...' : '가입하기'}
       </button>
 
       <div className="flex flex-col items-center gap-4 border-t border-surface-container/50 pt-8">
