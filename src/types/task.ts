@@ -1,4 +1,4 @@
-export type TaskStatus = 'TODO' | 'DONE'
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE'
 export type TaskView = 'today' | 'week' | 'all'
 
 export interface Task {
@@ -12,6 +12,7 @@ export interface Task {
   score: number
   createdAt: string
   updatedAt: string
+  teamId: number | null
 }
 
 export interface TaskInput {

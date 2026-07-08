@@ -6,6 +6,7 @@ export interface TaskHistoryEntry {
   completedAt: string
   actualMinutes: number
   estimatedMinutes: number | null
+  deadline: string
 }
 
 export type HistoryApiPeriod = 'week' | 'month'

@@ -1,5 +1,4 @@
-import { useState, type ChangeEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import Icon from '@/components/ui/Icon'
 import { formatMinutesLabel, getDDayLabel, isUrgentDeadline } from '@/lib/date'
 import type { PriorityTask } from '@/features/tasks/components/PriorityTaskSection'
@@ -7,39 +6,30 @@ import type { PriorityTask } from '@/features/tasks/components/PriorityTaskSecti
 interface TaskRowProps {
   rank: number
   task: PriorityTask
-  onComplete?: (id: number) => void
   onMoveUp?: (id: number) => void
   onMoveDown?: (id: number) => void
   canMoveUp?: boolean
   canMoveDown?: boolean
+  onOpenDetail?: (id: number) => void
 }
 
 export default function TaskRow({
   rank,
   task,
-  onComplete,
   onMoveUp,
   onMoveDown,
   canMoveUp,
   canMoveDown,
+  onOpenDetail,
 }: TaskRowProps) {
-  const navigate = useNavigate()
   const [reasonOpen, setReasonOpen] = useState(false)
   const urgent = isUrgentDeadline(task.deadline)
-
-  function handleCompleteChange(event: ChangeEvent<HTMLInputElement>) {
-    if (!window.confirm(`"${task.title}" 항목을 완료 처리할까요?`)) {
-      event.target.checked = false
-      return
-    }
-    onComplete?.(task.id)
-  }
 
   return (
     <>
       <tr
         className="group cursor-pointer transition-colors hover:bg-white/40"
-        onClick={() => navigate(`/tasks/${task.id}`)}
+        onClick={() => onOpenDetail?.(task.id)}
       >
         <td
           className={`border-l-4 p-4 text-label-md font-bold text-primary ${
@@ -67,13 +57,6 @@ export default function TaskRow({
               </button>
             </div>
           </div>
-        </td>
-        <td className="p-4" onClick={(event) => event.stopPropagation()}>
-          <input
-            type="checkbox"
-            onChange={handleCompleteChange}
-            className="h-5 w-5 rounded border-outline-variant text-secondary focus:ring-secondary"
-          />
         </td>
         <td className="p-4">
           <div className="flex flex-col">
@@ -127,7 +110,7 @@ export default function TaskRow({
       </tr>
       {reasonOpen && task.reason && (
         <tr className="bg-secondary/5">
-          <td colSpan={6} className="px-4 pb-4">
+          <td colSpan={5} className="px-4 pb-4">
             <div className="flex items-start gap-2 rounded-lg bg-white/60 p-3 text-label-sm italic text-secondary">
               <Icon name="auto_awesome" className="mt-0.5 text-sm" />
               {task.reason}

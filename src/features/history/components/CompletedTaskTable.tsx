@@ -8,6 +8,7 @@ export interface CompletedTask {
   completedAt: string
   estimatedMinutes: number | null
   actualMinutes: number
+  deadline: string
 }
 
 const PAGE_SIZE = 4

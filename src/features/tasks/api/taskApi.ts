@@ -1,5 +1,5 @@
 import { apiClient } from '@/api/client'
-import type { RerankedTask, Task, TaskInput, TaskView } from '@/types/task'
+import type { RerankedTask, Task, TaskInput, TaskStatus, TaskView } from '@/types/task'
 
 export const taskApi = {
   list: (view: TaskView) =>
@@ -27,4 +27,9 @@ export const taskApi = {
     apiClient
       .post<RerankedTask[]>('/tasks/rerank', null, { params: { view, limit } })
       .then((res) => res.data),
+
+  updateStatus: (id: number, status: TaskStatus) =>
+    apiClient.patch<Task>(`/tasks/${id}/status`, { status }).then((res) => res.data),
+
+  reassignToMe: (id: number) => apiClient.patch<Task>(`/tasks/${id}/reassign`).then((res) => res.data),
 }

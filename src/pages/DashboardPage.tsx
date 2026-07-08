@@ -7,9 +7,11 @@ import UrgentItemsCard from '@/features/tasks/components/UrgentItemsCard'
 import type { UrgentItem } from '@/features/tasks/components/UrgentItemsCard'
 import ProductivityScoreCard from '@/features/tasks/components/ProductivityScoreCard'
 import AddTaskModal, { type NewTaskInput } from '@/features/tasks/components/AddTaskModal'
+import TaskDetailModal from '@/features/tasks/components/TaskDetailModal'
 import { taskApi } from '@/features/tasks/api/taskApi'
+import { loadRerankReasons, loadTaskOrder, saveRerankReasons, saveTaskOrder } from '@/features/tasks/lib/rerankStorage'
 import { historyApi } from '@/features/history/api/historyApi'
-import { getDDayLabel, isCriticalDeadline, isUrgentDeadline, toEndOfDayIso } from '@/lib/date'
+import { getDDayLabel, isCompletedOnTime, isCriticalDeadline, isUrgentDeadline, toEndOfDayIso } from '@/lib/date'
 import type { Task, TaskView } from '@/types/task'
 
 function toPriorityTask(task: Task): PriorityTask {
@@ -74,6 +76,7 @@ export default function DashboardPage() {
   const [view, setView] = useState<TaskView>('today')
   const [isAddModalOpen, setAddModalOpen] = useState(false)
   const [rerankLimit, setRerankLimit] = useState(DEFAULT_RERANK_LIMIT)
+  const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
   const queryClient = useQueryClient()
 
   const tasksQuery = useQuery({
@@ -95,11 +98,13 @@ export default function DashboardPage() {
 
   // Order/reasons are kept in the react-query cache (not useState) so they survive
   // navigating away from the dashboard and back, instead of resetting on remount. Global
-  // (not per-view) — see mergeOrder's comment for why.
+  // (not per-view) — see mergeOrder's comment for why. Also mirrored to per-user
+  // localStorage (rerankStorage.ts) so they survive a logout -> login (or full page
+  // reload) too, not just in-app navigation within the same browser session.
   const orderQuery = useQuery<number[] | null>({
     queryKey: ['taskOrder'],
     queryFn: () => null,
-    initialData: null,
+    initialData: () => loadTaskOrder(),
     staleTime: Infinity,
   })
   const orderIds = orderQuery.data ?? null
@@ -107,7 +112,7 @@ export default function DashboardPage() {
   const reasonsQuery = useQuery<Record<number, string> | null>({
     queryKey: ['rerankReasons'],
     queryFn: () => null,
-    initialData: null,
+    initialData: () => loadRerankReasons(),
     staleTime: Infinity,
   })
   const reasonsById = reasonsQuery.data ?? null
@@ -121,12 +126,16 @@ export default function DashboardPage() {
       taskApi.rerank(variables.view, variables.limit),
     onSuccess: (result) => {
       const sorted = [...result].sort((a, b) => a.newRank - b.newRank)
-      queryClient.setQueryData(['taskOrder'], (current: number[] | null | undefined) =>
-        mergeOrder(current ?? null, sorted.map((r) => r.taskId)),
-      )
-      queryClient.setQueryData(['rerankReasons'], (current: Record<number, string> | null | undefined) =>
-        mergeReasons(current ?? null, Object.fromEntries(result.map((r) => [r.taskId, r.reason]))),
-      )
+      queryClient.setQueryData(['taskOrder'], (current: number[] | null | undefined) => {
+        const next = mergeOrder(current ?? null, sorted.map((r) => r.taskId))
+        saveTaskOrder(next)
+        return next
+      })
+      queryClient.setQueryData(['rerankReasons'], (current: Record<number, string> | null | undefined) => {
+        const next = mergeReasons(current ?? null, Object.fromEntries(result.map((r) => [r.taskId, r.reason])))
+        saveRerankReasons(next)
+        return next
+      })
     },
   })
 
@@ -137,9 +146,11 @@ export default function DashboardPage() {
     if (swapIndex < 0 || swapIndex >= currentIds.length) return
     const nextIds = [...currentIds]
     ;[nextIds[index], nextIds[swapIndex]] = [nextIds[swapIndex], nextIds[index]]
-    queryClient.setQueryData(['taskOrder'], (current: number[] | null | undefined) =>
-      mergeOrder(current ?? null, nextIds),
-    )
+    queryClient.setQueryData(['taskOrder'], (current: number[] | null | undefined) => {
+      const next = mergeOrder(current ?? null, nextIds)
+      saveTaskOrder(next)
+      return next
+    })
   }
 
   const createMutation = useMutation({
@@ -148,30 +159,9 @@ export default function DashboardPage() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
       queryClient.removeQueries({ queryKey: ['taskOrder'] })
       queryClient.removeQueries({ queryKey: ['rerankReasons'] })
+      saveTaskOrder(null)
+      saveRerankReasons(null)
       setAddModalOpen(false)
-    },
-  })
-
-  const completeMutation = useMutation({
-    mutationFn: (id: number) => taskApi.complete(id),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: ['tasks', view] })
-      const previous = queryClient.getQueryData<Task[]>(['tasks', view])
-      queryClient.setQueryData<Task[]>(['tasks', view], (current) =>
-        current?.filter((task) => task.id !== id),
-      )
-      return { previous }
-    },
-    onError: (_err, _id, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(['tasks', view], context.previous)
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] })
-      queryClient.invalidateQueries({ queryKey: ['history'] })
-      queryClient.removeQueries({ queryKey: ['taskOrder'] })
-      queryClient.removeQueries({ queryKey: ['rerankReasons'] })
     },
   })
 
@@ -191,9 +181,7 @@ export default function DashboardPage() {
 
   const weekHistory = weekHistoryQuery.data ?? []
   const weekCompletedCount = weekHistory.length
-  const onTimeCount = weekHistory.filter(
-    (entry) => entry.estimatedMinutes !== null && entry.actualMinutes <= entry.estimatedMinutes,
-  ).length
+  const onTimeCount = weekHistory.filter((entry) => isCompletedOnTime(entry.completedAt, entry.deadline)).length
   const productivityScore = weekCompletedCount > 0 ? Math.round((onTimeCount / weekCompletedCount) * 100) : 0
   const productivityDelta = `이번 주 ${weekCompletedCount}건 완료`
   const productivityComparison =
@@ -213,13 +201,13 @@ export default function DashboardPage() {
           isLoading={tasksQuery.isLoading}
           error={tasksQuery.isError ? '할 일을 불러오지 못했습니다.' : null}
           onAddClick={() => setAddModalOpen(true)}
-          onCompleteTask={(id) => completeMutation.mutate(id)}
           onRerankClick={() => rerankMutation.mutate({ view, limit: rerankLimit })}
           isReranking={rerankMutation.isPending}
           rerankLimit={rerankLimit}
           onRerankLimitChange={setRerankLimit}
           onMoveTaskUp={(id) => moveTask(id, 'up')}
           onMoveTaskDown={(id) => moveTask(id, 'down')}
+          onOpenTaskDetail={setSelectedTaskId}
           tabs={<ViewTabs value={view} onChange={setView} />}
         />
         <section className="mx-auto grid max-w-5xl grid-cols-1 gap-gutter pb-12 lg:grid-cols-2">
@@ -232,6 +220,7 @@ export default function DashboardPage() {
         </section>
       </div>
       <AddTaskModal open={isAddModalOpen} onClose={() => setAddModalOpen(false)} onSubmit={handleAddTask} />
+      <TaskDetailModal taskId={selectedTaskId} onClose={() => setSelectedTaskId(null)} />
     </>
   )
 }

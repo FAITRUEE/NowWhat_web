@@ -4,6 +4,7 @@ import type { CalendarEvent } from '@/features/calendar/components/CalendarGrid'
 const ACCENT_STYLES: Record<CalendarEvent['accent'], string> = {
   secondary: 'bg-secondary/10 border-secondary text-secondary',
   error: 'bg-error/10 border-error text-error',
+  neutral: 'bg-surface-container border-outline text-on-surface-variant',
 }
 
 const MAX_VISIBLE_EVENTS = 2
