@@ -35,6 +35,10 @@ export function formatMinutesLabel(minutes: number): string {
   return `${hours}시간 ${mins}분`
 }
 
+export function isCompletedOnTime(completedAt: string, deadline: string): boolean {
+  return new Date(completedAt).getTime() <= new Date(deadline).getTime()
+}
+
 export function formatCompletedAt(dateTime: string): string {
   const date = new Date(dateTime)
   const dateLabel = `${date.getFullYear()}.${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`

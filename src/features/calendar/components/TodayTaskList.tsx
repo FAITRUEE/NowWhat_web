@@ -7,6 +7,8 @@ export interface TodayTask {
   priority: 'high' | 'medium' | 'low'
   timeLabel: string
   done?: boolean
+  completedLate?: boolean
+  overdue?: boolean
 }
 
 const PRIORITY_BADGE: Record<TodayTask['priority'], string> = {
@@ -49,9 +51,21 @@ export default function TodayTaskList({ title, dateLabel, tasks, onAddClick }: T
             }`}
           >
             {task.done ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-2 py-0.5 text-label-sm font-bold text-secondary">
-                <Icon name="check_circle" filled className="text-sm" />
-                완료됨
+              task.completedLate ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-error/10 px-2 py-0.5 text-label-sm font-bold text-error">
+                  <Icon name="error" filled className="text-sm" />
+                  기한 초과 완료
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-2 py-0.5 text-label-sm font-bold text-secondary">
+                  <Icon name="check_circle" filled className="text-sm" />
+                  완료됨
+                </span>
+              )
+            ) : task.overdue ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-error/10 px-2 py-0.5 text-label-sm font-bold text-error">
+                <Icon name="cancel" filled className="text-sm" />
+                완료되지 않음
               </span>
             ) : (
               <span className={`rounded-full px-2 py-0.5 text-label-sm font-bold ${PRIORITY_BADGE[task.priority]}`}>

@@ -16,6 +16,9 @@
 | 완료 이력 (SC-06) | `GET /api/tasks/history?period=week\|month` |
 | 가중치 설정 (SC-07) | `GET`/`PUT /api/users/weights`, "초기화" 버튼으로 기본값(50/30/20) 복귀(로컬 상태만 되돌림 — 저장하려면 "가중치 적용"을 다시 눌러야 함). 우측 "실시간 미리보기"는 스펙(SC-07)에 명시된 대로 예시 데이터이며 실제 태스크가 아님 |
 | 캘린더 (기획 문서에 없는 신규 화면) | `GET /api/tasks/calendar?from=&to=` (완료 항목 포함), 날짜 클릭 시 해당 날짜 상세를 우측에 표시, 모달로 실제 태스크 생성 |
+| 팀 목록 (기획 문서에 없는 신규 화면) | `/teams`, `GET /api/teams` — 팀 생성 폼 + 팀 카드 목록(각 카드가 자기 보드의 최우선 업무를 미리 보여줌) |
+| 팀 상세 (기획 문서에 없는 신규 화면) | `/teams/:teamId`, `GET /api/teams/{id}` — 팀원 목록, 이메일로 팀원 추가 |
+| 팀 보드 (기획 문서에 없는 신규 화면) | `/teams/:teamId/board` — 칸반형(드래그로 상태 변경, 카드 클릭 시 상세/수정/삭제)과 우선순위형(수동 순서 조정 가능) 토글, "업무 추가"(담당자 지정), "팀원 초대", "역할 추천 분배"(`POST /api/teams/{id}/organize`로 기존 업무를 AI가 그룹화) 버튼 |
 
 ## 기술 스택
 
@@ -27,6 +30,7 @@
 | 라우팅 | react-router-dom v7 |
 | 서버 상태 | @tanstack/react-query |
 | HTTP 클라이언트 | axios |
+| 드래그앤드롭 | @dnd-kit/core, @dnd-kit/sortable (팀 칸반보드) |
 | 아이콘 / 폰트 | Material Symbols Outlined, Inter (Google Fonts) |
 | 린트 | oxlint |
 
@@ -65,8 +69,13 @@ src/
 │   │   └── api/taskApi.ts         # /api/tasks 호출 함수 (list/calendar/create/update/remove/complete/rerank)
 │   ├── history/{components,api}  # HistoryPeriodTabs, HistoryStatCard, CompletedTaskTable, InsightBanner, historyApi.ts
 │   ├── weights/{components,api,lib,mock} # PriorityWeightsPanel, LivePreviewPanel(예시 데이터), weightApi.ts
-│   └── calendar/{components,lib} # CalendarToolbar, CalendarGrid, TodayTaskList, monthGrid.ts(달력 그리드 계산)
-├── pages/                       # 라우트 단위 화면 — 기능 컴포넌트를 조합만 함 (TaskDetailPage 포함)
+│   ├── calendar/{components,lib} # CalendarToolbar, CalendarGrid, TodayTaskList, monthGrid.ts(달력 그리드 계산)
+│   └── team/
+│       ├── components/            # TeamCard, CreateTeamForm, AddMemberForm, InviteMemberModal, AddTeamTaskModal,
+│       │                           # TeamTaskDetailModal(상세/수정/삭제), KanbanBoard(dnd-kit), TeamPriorityList, RoleBundlePool
+│       ├── api/teamApi.ts          # /api/teams 호출 함수 (list/create/detail/addMember/createTask/organize/bundles/board)
+│       └── lib/board.ts            # groupByStatus, sortByPriority, applyManualOrder(우선순위형 수동 정렬)
+├── pages/                       # 라우트 단위 화면 — 기능 컴포넌트를 조합만 함 (TaskDetailPage, TeamListPage, TeamDetailPage, TeamBoardPage 포함)
 ├── routes/router.tsx             # react-router 라우트 테이블
 ├── types/task.ts                 # 백엔드 DTO를 미러링하는 타입
 ├── lib/date.ts                   # D-Day 라벨/긴급·초과 여부/시간 포맷 유틸

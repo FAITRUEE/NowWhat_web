@@ -6,7 +6,7 @@ import TodayTaskList, { type TodayTask } from '@/features/calendar/components/To
 import AddTaskModal, { type NewTaskInput } from '@/features/tasks/components/AddTaskModal'
 import { taskApi } from '@/features/tasks/api/taskApi'
 import { buildMonthGrid, toKey } from '@/features/calendar/lib/monthGrid'
-import { formatMinutesLabel, toEndOfDayIso } from '@/lib/date'
+import { formatMinutesLabel, isCompletedOnTime, toEndOfDayIso } from '@/lib/date'
 import type { Task } from '@/types/task'
 
 const TODAY = new Date()
@@ -19,7 +19,9 @@ const TODAY_DATE_LABEL = TODAY.toLocaleDateString('ko-KR', {
 })
 
 function accentForImportance(importance: number): CalendarEvent['accent'] {
-  return importance >= 4 ? 'error' : 'secondary'
+  if (importance >= 4) return 'error'
+  if (importance === 3) return 'secondary'
+  return 'neutral'
 }
 
 function priorityForImportance(importance: number): TodayTask['priority'] {
@@ -32,14 +34,23 @@ function toCalendarEvent(task: Task): CalendarEvent {
   return { id: task.id, title: task.title, accent: accentForImportance(task.importance) }
 }
 
-function toDayTask(task: Task): TodayTask {
+// The "오늘의 할 일" panel intentionally includes overdue-but-still-open tasks (see
+// TaskService.matchesView's TODAY case on the backend) so they don't get lost — but
+// that makes almost every item there technically "overdue," so the 완료되지 않음 badge
+// is only meaningful when looking at a specific past date, not the today panel itself.
+function toDayTask(task: Task, showOverdue: boolean): TodayTask {
+  const done = task.status === 'DONE'
   return {
     id: task.id,
     title: task.title,
     description: task.description || '설명 없음',
     priority: priorityForImportance(task.importance),
     timeLabel: task.estimatedMinutes ? `예상 ${formatMinutesLabel(task.estimatedMinutes)}` : '시간 미정',
-    done: task.status === 'DONE',
+    done,
+    // Task has no dedicated completedAt — updatedAt is the last mutation, which for a
+    // DONE task is the complete() call, so it doubles as a completion timestamp here.
+    completedLate: done && !isCompletedOnTime(task.updatedAt, task.deadline),
+    overdue: showOverdue && !done && new Date(task.deadline).getTime() < Date.now(),
   }
 }
 
@@ -68,10 +79,11 @@ export default function CalendarPage() {
     queryFn: () => taskApi.calendar(rangeFrom, rangeTo),
   })
 
+  // Not gated on isTodaySelected — the grid's today cell (below) needs this
+  // regardless of which day is currently selected in the side panel.
   const todayQuery = useQuery({
     queryKey: ['tasks', 'today'],
     queryFn: () => taskApi.list('today'),
-    enabled: isTodaySelected,
   })
 
   const createMutation = useMutation({
@@ -88,8 +100,21 @@ export default function CalendarPage() {
       const key = task.deadline.slice(0, 10)
       grouped[key] = [...(grouped[key] ?? []), toCalendarEvent(task)]
     }
+    // The "오늘의 할 일" panel rolls overdue-but-still-open tasks forward into today
+    // (backend TODAY view: deadline <= today, not done) — mirror that here so today's
+    // grid cell isn't missing items that visibly appear in that panel. Tasks actually
+    // due today are already in `grouped[TODAY_KEY]` from calendarQuery above; only add
+    // the rolled-forward ones that aren't there yet, without removing them from their
+    // original (past) date so that date still shows what was due there.
+    const alreadyOnToday = new Set((grouped[TODAY_KEY] ?? []).map((event) => event.id))
+    const rolledOverToday = (todayQuery.data ?? [])
+      .filter((task) => !alreadyOnToday.has(task.id))
+      .map(toCalendarEvent)
+    if (rolledOverToday.length > 0) {
+      grouped[TODAY_KEY] = [...(grouped[TODAY_KEY] ?? []), ...rolledOverToday]
+    }
     return grouped
-  }, [calendarQuery.data])
+  }, [calendarQuery.data, todayQuery.data])
 
   const selectedDayTasks = useMemo(
     () => (calendarQuery.data ?? []).filter((task) => task.deadline.slice(0, 10) === selectedKey),
@@ -99,7 +124,9 @@ export default function CalendarPage() {
   const panelTitle = isTodaySelected
     ? '오늘의 할 일'
     : `${selectedDate.getMonth() + 1}월 ${selectedDate.getDate()}일 할 일`
-  const panelTasks = isTodaySelected ? (todayQuery.data ?? []).map(toDayTask) : selectedDayTasks.map(toDayTask)
+  const panelTasks = isTodaySelected
+    ? (todayQuery.data ?? []).map((task) => toDayTask(task, false))
+    : selectedDayTasks.map((task) => toDayTask(task, true))
 
   function handlePrevMonth() {
     setCursor((current) => new Date(current.getFullYear(), current.getMonth() - 1, 1))

@@ -4,7 +4,7 @@ import type { CalendarDay } from '@/features/calendar/lib/monthGrid'
 export interface CalendarEvent {
   id: number
   title: string
-  accent: 'secondary' | 'error'
+  accent: 'secondary' | 'error' | 'neutral'
 }
 
 const WEEKDAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']

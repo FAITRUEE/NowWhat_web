@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { to: '/', label: '대시보드', icon: 'dashboard' },
   { to: '/history', label: '이력', icon: 'history' },
   { to: '/calendar', label: '캘린더', icon: 'calendar_today' },
+  { to: '/teams', label: '팀 프로젝트', icon: 'groups' },
   { to: '/settings/weights', label: '설정', icon: 'settings' },
 ] as const
 
