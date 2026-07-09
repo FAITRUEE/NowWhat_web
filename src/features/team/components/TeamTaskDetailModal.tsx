@@ -3,7 +3,7 @@ import Icon from '@/components/ui/Icon'
 import DatePicker from '@/components/ui/DatePicker'
 import { formatMinutesLabel, getDDayLabel } from '@/lib/date'
 import type { TaskInput } from '@/types/task'
-import type { TeamTask } from '@/features/team/api/teamApi'
+import type { TeamMember, TeamTask } from '@/features/team/api/teamApi'
 
 const IMPORTANCE_OPTIONS: { value: 1 | 3 | 5; label: string }[] = [
   { value: 5, label: '긴급' },
@@ -24,21 +24,27 @@ function nearestImportanceOption(value: number): 1 | 3 | 5 {
 interface TeamTaskDetailModalProps {
   task: TeamTask | null
   currentUserEmail: string | null
+  members: TeamMember[]
   onClose: () => void
   onUpdate: (taskId: number, input: TaskInput) => void
   onDelete: (taskId: number) => void
+  onReassign: (taskId: number, assigneeUserId: number) => void
   isSaving?: boolean
   isDeleting?: boolean
+  isReassigning?: boolean
 }
 
 export default function TeamTaskDetailModal({
   task,
   currentUserEmail,
+  members,
   onClose,
   onUpdate,
   onDelete,
+  onReassign,
   isSaving,
   isDeleting,
+  isReassigning,
 }: TeamTaskDetailModalProps) {
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState('')
@@ -86,7 +92,21 @@ export default function TeamTaskDetailModal({
         <div className="flex items-center justify-between border-b border-surface-variant/30 p-8">
           <div>
             <h3 className="text-headline-md text-primary">{editing ? '업무 수정' : '업무 상세'}</h3>
-            <p className="text-label-md text-on-surface-variant">담당자: {task.assigneeEmail}</p>
+            <div className="mt-1 flex items-center gap-2">
+              <label className="text-label-md text-on-surface-variant">담당자</label>
+              <select
+                value={task.assigneeUserId}
+                onChange={(event) => onReassign(task.id, Number(event.target.value))}
+                disabled={isReassigning}
+                className="rounded-lg border border-outline-variant/30 bg-white px-2 py-1 text-label-md text-primary focus:outline-none focus:ring-2 focus:ring-secondary/50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {members.map((member) => (
+                  <option key={member.userId} value={member.userId}>
+                    {member.email}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <button
             type="button"
@@ -210,7 +230,7 @@ export default function TeamTaskDetailModal({
               )}
               {!isOwner && (
                 <p className="text-label-sm text-on-surface-variant opacity-70">
-                  담당자만 수정·삭제할 수 있어요. 먼저 "나로 바꾸기"로 담당자를 바꿔보세요.
+                  담당자만 수정·삭제할 수 있어요. 위의 담당자 선택으로 바꿀 수 있어요.
                 </p>
               )}
             </div>
