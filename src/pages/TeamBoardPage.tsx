@@ -66,6 +66,15 @@ export default function TeamBoardPage() {
     },
   })
 
+  const reassignToMemberMutation = useMutation({
+    mutationFn: ({ taskId, assigneeUserId }: { taskId: number; assigneeUserId: number }) =>
+      taskApi.reassign(taskId, assigneeUserId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team-board', id] })
+      queryClient.invalidateQueries({ queryKey: ['team-bundles', id] })
+    },
+  })
+
   const createMutation = useMutation({
     mutationFn: (input: NewTeamTaskInput) =>
       teamApi.createTask(id, {
@@ -205,7 +214,7 @@ export default function TeamBoardPage() {
           onOpenDetail={(taskId) => setSelectedTaskId(taskId)}
         />
       ) : (
-        <TeamPriorityList tasks={tasks} />
+        <TeamPriorityList tasks={tasks} onOpenDetail={(taskId) => setSelectedTaskId(taskId)} />
       )}
 
       <AddTeamTaskModal
@@ -230,11 +239,14 @@ export default function TeamBoardPage() {
       <TeamTaskDetailModal
         task={selectedTask}
         currentUserEmail={currentUserEmail}
+        members={members}
         onClose={() => setSelectedTaskId(null)}
         onUpdate={(taskId, input) => updateMutation.mutate({ taskId, input })}
         onDelete={(taskId) => deleteMutation.mutate(taskId)}
+        onReassign={(taskId, assigneeUserId) => reassignToMemberMutation.mutate({ taskId, assigneeUserId })}
         isSaving={updateMutation.isPending}
         isDeleting={deleteMutation.isPending}
+        isReassigning={reassignToMemberMutation.isPending}
       />
     </div>
   )

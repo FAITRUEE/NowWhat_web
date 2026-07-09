@@ -32,4 +32,7 @@ export const taskApi = {
     apiClient.patch<Task>(`/tasks/${id}/status`, { status }).then((res) => res.data),
 
   reassignToMe: (id: number) => apiClient.patch<Task>(`/tasks/${id}/reassign`).then((res) => res.data),
+
+  reassign: (id: number, assigneeUserId: number) =>
+    apiClient.patch<Task>(`/tasks/${id}/reassign`, { assigneeUserId }).then((res) => res.data),
 }

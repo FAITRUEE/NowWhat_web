@@ -6,9 +6,10 @@ import { applyManualOrder, sortByPriority } from '@/features/team/lib/board'
 
 interface TeamPriorityListProps {
   tasks: TeamTask[]
+  onOpenDetail?: (taskId: number) => void
 }
 
-export default function TeamPriorityList({ tasks }: TeamPriorityListProps) {
+export default function TeamPriorityList({ tasks, onOpenDetail }: TeamPriorityListProps) {
   const [orderIds, setOrderIds] = useState<number[] | null>(null)
   const sorted = applyManualOrder(sortByPriority(tasks), orderIds)
 
@@ -46,8 +47,12 @@ export default function TeamPriorityList({ tasks }: TeamPriorityListProps) {
         </thead>
         <tbody className="divide-y divide-outline-variant/10">
           {sorted.map((task, index) => (
-            <tr key={task.id} className="transition-colors hover:bg-white/40">
-              <td className="p-4 text-label-md font-bold text-primary">
+            <tr
+              key={task.id}
+              onClick={() => onOpenDetail?.(task.id)}
+              className={`transition-colors hover:bg-white/40 ${onOpenDetail ? 'cursor-pointer' : ''}`}
+            >
+              <td className="p-4 text-label-md font-bold text-primary" onClick={(event) => event.stopPropagation()}>
                 <div className="flex items-center gap-1">
                   <span>{index + 1}순위</span>
                   <div className="flex flex-col">
