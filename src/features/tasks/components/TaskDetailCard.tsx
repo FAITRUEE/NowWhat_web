@@ -72,7 +72,7 @@ export default function TaskDetailCard({
         </div>
         <div>
           <p className="text-label-sm uppercase tracking-wider text-on-surface-variant">상태</p>
-          <p className="mt-1 text-label-md font-bold text-primary">{task.status === 'DONE' ? '완료' : '진행 중'}</p>
+          <p className="mt-1 text-label-md font-bold text-primary">{task.status === 'DONE' ? '완료' : task.status === 'IN_PROGRESS' ? '진행 중' : '할 일'}</p>
         </div>
       </div>
 
