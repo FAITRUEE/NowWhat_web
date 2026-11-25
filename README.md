@@ -1,8 +1,84 @@
-# NowWhat — 할 일 우선순위 추천 서비스 (Frontend)
+<div align="center">
 
-사용자의 할 일 목록을 마감일·중요도·소요시간 기준으로 분석해 오늘 무엇부터 해야 하는지 자동으로 추천해주는 개인 생산성 서비스의 프론트엔드입니다. [백엔드(NowWhat_was)](../NowWhat_was)와 함께 동작하도록 설계되었습니다.
+<img src="docs/screenshots/dashboard.png" alt="NowWhat 대시보드: 마감·중요도·예상 시간으로 점수를 매겨 줄 세운 할 일 목록" width="900">
 
-## 현재 상태
+# NowWhat — 지금 뭐부터 하지?
+
+**할 일을 마감·중요도·예상 시간으로 점수화해 오늘 먼저 할 일을 줄 세우고,<br>"AI 재정렬"을 누르면 로컬 LLM이 상위 후보의 순서를 다듬고 이유를 한 줄로 설명합니다.**
+
+![React](https://img.shields.io/badge/React_19-20232A?style=flat-square&logo=react)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite_8-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Tailwind](https://img.shields.io/badge/Tailwind_v4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
+![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?style=flat-square&logo=reactquery&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest_40_tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)
+
+[백엔드 저장소 (NowWhat_was)](https://github.com/FAITRUEE/NowWhat_was) · 1인 풀스택 · 2026 여름 영남대 생성형 AI 서비스 플랫폼 활용 교육
+
+</div>
+
+<br>
+
+## 왜 만들었나
+
+할 일 앱은 많지만 **우선순위는 대부분 사용자가 직접** 정해야 합니다. 할 일이 많을수록 "뭐부터 하지?"라는 결정 자체가 부담이 됩니다. NowWhat은 그 결정을 점수와 근거로 대신 내려 줍니다.
+
+```
+점수 = 긴급도 × w1 + 중요도 × w2 + 시간 효율성 × w3      (기본 가중치 50 : 30 : 20, 사용자가 조절)
+```
+
+규칙 기반 점수로 먼저 줄 세우고, "AI 재정렬"을 누르면 상위 후보(기본 5개)만 로컬 LLM(Ollama · EXAONE 3.5 7.8B)에 보내 순서와 이유를 다듬습니다. LLM이 꺼져 있거나 응답이 형식에 맞지 않으면 **규칙 기반 순위를 그대로 유지**합니다.
+
+<br>
+
+## 화면
+
+### 개인 — 오늘 할 일부터
+
+| 대시보드 · AI 재정렬 | 할 일 상세 |
+|:---:|:---:|
+| <img src="docs/screenshots/dashboard.png" alt="대시보드" width="430"> | <img src="docs/screenshots/task-detail.png" alt="할 일 상세" width="430"> |
+| 우선순위 점수로 줄 세운 목록. ✦ 표시는 AI 재정렬 대상이 된 상위 항목 | 마감·예상 시간·상태, 수정·삭제·완료 처리 |
+| **할 일 추가** | **가중치 설정** |
+| <img src="docs/screenshots/task-add.png" alt="할 일 추가" width="430"> | <img src="docs/screenshots/weights.png" alt="가중치 설정" width="430"> |
+| 마감일·중요도(1~5)·예상 소요 시간 입력 | 긴급도·중요도·시간 효율성 비중을 슬라이더로, 오른쪽 미리보기에 바로 반영 |
+| **캘린더** | **완료 이력** |
+| <img src="docs/screenshots/calendar.png" alt="캘린더" width="430"> | <img src="docs/screenshots/history.png" alt="완료 이력" width="430"> |
+| 월간 마감 일정과 오늘의 할 일 | 실제 소요 시간과 기한 내 완료율 |
+
+### 팀 — 같이 쓰는 보드
+
+| 팀 목록 | 팀 보드 (칸반) |
+|:---:|:---:|
+| <img src="docs/screenshots/teams.png" alt="팀 목록" width="430"> | <img src="docs/screenshots/team-board.png" alt="팀 칸반 보드" width="430"> |
+| 팀마다 보드의 최우선 업무를 미리 보여 줌 | 드래그로 상태 변경, 담당자 지정, 우선순위형 보기, LLM "역할 추천 분배" |
+
+<br>
+
+## 이렇게 만들었습니다
+
+- **1인 풀스택** — 기획서·화면 명세(SC-01~10)·기능 정의서부터 화면(React)과 서버(Spring Boot)까지 혼자 만들었습니다.
+- **테스트** — 프론트 40개(Vitest + Testing Library), 백엔드 51개(단위 + MockMvc 통합).
+- **LLM은 보조로만** — 순서는 규칙 점수가 정하고, LLM은 상위 후보의 순서와 이유만 다듬습니다. 실패해도 서비스는 그대로 동작합니다.
+
+<br>
+
+## 실행하기
+
+```bash
+# 1. 백엔드 (NowWhat_was) — Java 21
+./gradlew bootRun                 # http://localhost:8080
+
+# 2. 프론트엔드 (이 저장소)
+npm install
+npm run dev                       # http://localhost:5173 — /api 요청은 8080으로 프록시
+```
+
+첫 실행 시 데모 계정 `demo@nowwhat.com` / `demo1234`가 만들어집니다. AI 재정렬을 LLM으로 보려면 [Ollama](https://ollama.com)에서 `ollama pull exaone3.5:7.8b`를 받아 두세요(없으면 규칙 기반 순위로 동작).
+
+<br>
+
+## 화면별 API 연동
 
 로그인부터 대시보드/이력/캘린더/가중치 설정까지 전 화면이 **실제 백엔드 API에 연동**되어 있습니다 (`@tanstack/react-query` 기반).
 
@@ -34,7 +110,7 @@
 | 아이콘 / 폰트 | Material Symbols Outlined, Inter (Google Fonts) |
 | 린트 | oxlint |
 
-## 시작하기
+## 개발 명령어
 
 ```bash
 npm install
@@ -61,7 +137,7 @@ src/
 ├── api/client.ts              # 공용 axios 인스턴스 — localStorage의 JWT 부착, 401 시 /login 리다이렉트
 ├── components/
 │   ├── ui/                     # 범용 프레젠테이션 컴포넌트 (API 호출/비즈니스 로직 없음) — Icon, TextField, DatePicker
-│   └── layout/                 # 페이지 뼈대 — MainLayout(Sidebar+Outlet), AuthLayout(로그인/회원가입 공용 배경), Sidebar, PageHeader
+│   └── layout/                 # 페이지 뼈대 — MainLayout(로그인 안 했으면 /login으로 보냄, Sidebar+Outlet), AuthLayout(로그인/회원가입 공용 배경), Sidebar, PageHeader
 ├── features/
 │   ├── auth/{components,api}    # LoginForm, SignupForm, authApi.ts
 │   ├── tasks/
